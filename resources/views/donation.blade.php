@@ -106,7 +106,7 @@
         $("#donation_form").submit(function(event) {
             event.preventDefault();
 
-            $.post("{{ route('donation.store') }}", {
+            $.post("/api/donation", {
                 _method: 'POST',
                 _token: '{{ csrf_token() }}',
                 donor_name: $('input#donor_name').val(),
