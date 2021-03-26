@@ -115,20 +115,24 @@
                 amount: $('input#amount').val(),
                 note: $('textarea#note').val(),
             },
+
             function (data, status) {
                 console.log(data);
                 snap.pay(data.snap_token, {
                     // Optional
                     onSuccess: function (result) {
-                        location.reload();
+                        console.log(JSON.stringify(result, null, 2));
+                        location.replace('/');
                     },
                     // Optional
                     onPending: function (result) {
-                        location.reload();
+                        console.log(JSON.stringify(result, null, 2));
+                        location.replace('/');
                     },
                     // Optional
                     onError: function (result) {
-                        location.reload();
+                        console.log(JSON.stringify(result, null, 2));
+                        location.replace('/');
                     }
                 });
                 return false;

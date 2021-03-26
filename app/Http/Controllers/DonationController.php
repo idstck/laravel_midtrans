@@ -2,9 +2,6 @@
 
 namespace App\Http\Controllers;
 use App\Donation;
-use Veritrans_Config;
-use Veritrans_Snap;
-use Veritrans_Notification;
 
 use Illuminate\Http\Request;
 
@@ -13,10 +10,10 @@ class DonationController extends Controller
 
     public function __construct()
     {
-        Veritrans_Config::$serverKey = config('services.midtrans.serverKey');
-        Veritrans_Config::$isProduction = config('services.midtrans.isProduction');
-        Veritrans_Config::$isSanitized = config('services.midtrans.isSanitized');
-        Veritrans_Config::$is3ds = config('services.midtrans.is3ds');
+        \Midtrans\Config::$serverKey = config('services.midtrans.serverKey');
+        \Midtrans\Config::$isProduction = config('services.midtrans.isProduction');
+        \Midtrans\Config::$isSanitized = config('services.midtrans.isSanitized');
+        \Midtrans\Config::$is3ds = config('services.midtrans.is3ds');
     }
 
     public function index()
@@ -34,6 +31,7 @@ class DonationController extends Controller
     {
         \DB::transaction(function() use($request) {
             $donation = Donation::create([
+                'transaction_id' => \Str::uuid(),
                 'donor_name' => $request->donor_name,
                 'donor_email' => $request->donor_email,
                 'donation_type' => $request->donation_type,
@@ -43,7 +41,7 @@ class DonationController extends Controller
 
             $payload = [
                 'transaction_details' => [
-                    'order_id'      => $donation->id,
+                    'order_id'      => $donation->transaction_id,
                     'gross_amount'  => $donation->amount,
                 ],
                 'customer_details' => [
@@ -61,7 +59,7 @@ class DonationController extends Controller
                     ]
                 ]
             ];
-            $snapToken = Veritrans_Snap::getSnapToken($payload);
+            $snapToken = \Midtrans\Snap::getSnapToken($payload);
             $donation->snap_token = $snapToken;
             $donation->save();
 
@@ -73,14 +71,15 @@ class DonationController extends Controller
 
     public function notification(Request $request)
     {
-        $notif = new Veritrans_Notification();
+        $notif = new \Midtrans\Notification();
+
         \DB::transaction(function() use($notif) {
 
           $transaction = $notif->transaction_status;
           $type = $notif->payment_type;
           $orderId = $notif->order_id;
           $fraud = $notif->fraud_status;
-          $donation = Donation::findOrFail($orderId);
+          $donation = Donation::where('transaction_id', $orderId)->first();
 
           if ($transaction == 'capture') {
             if ($type == 'credit_card') {
